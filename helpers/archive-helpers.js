@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var http = require('http');
 
 
 /*
@@ -29,32 +30,56 @@ exports.initialize = function(pathsObj) {
 exports.readListOfUrls = function(callback) {
   fs.readFile(exports.paths.list, 'utf8', function(err, data) {
     if (err) {
-      callback(null, err);
+      callback(err, null); 
     } else {
-      callback(data.split('\n'), null);
+      callback(null, data.split('\n')); // either true or false
     }
   });
 };
 
 exports.isUrlInList = function(url, callback) {
-  var siteList = [];
-  exports.readListOfUrls((data) => {
-    console.log('look here', data);
+  exports.readListOfUrls(function findUrlInList(err, data) {
     for (var i = 0; i < data.length; i++) {
-      siteList.push(data[i]);
+      if (data[i] === url) {
+        return callback(err, true);
+      }
     }
-    console.log('thisssssssssssssssssssss', siteList);
-    return siteList;
+    return callback(err, false);
   });
-  console.log('####', siteList);
 };
 
 exports.addUrlToList = function(url, callback) {
+  fs.appendFile(exports.paths.list, '\n' + url, function(err, data) {
+    if (err) {
+      callback(err, null);   
+    } else {
+      callback(null, data);
+    }
+  });
 };
 
 exports.isUrlArchived = function(url, callback) {
-
+  if (fs.existsSync(exports.paths.archivedSites + '/' + url)) {
+    console.log(exports.paths.archivedSites + '/' + url);
+    return callback(null, true);
+  } else {
+    return callback(null, false);
+  }
 };
 
 exports.downloadUrls = function(urls) {
+  var storage = [];
+  for (var i = 0; i < urls.length; i++) {
+    var file = fs.createWriteStream(urls[i]);
+    console.log('hello!', urls[i]);
+    var options = {
+      host: urls[i],
+      port: 80,
+      path: '/'
+    };
+    http.get(options, function(response) {
+      response.pipe(file);
+    });
+  }
+  
 };
