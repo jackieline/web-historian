@@ -10,28 +10,6 @@ exports.handleRequest = function (req, res) {
 
   if (req.method === 'GET') {
   
-    // if (req.url === '/') {
-    //   httpHelpers.serveAssets(archive.paths.siteAssets, res, '/index.html');
-    // } else {
-    //   archive.isUrlArchived(req.url, (err, exists) => {
-    //     if (exists) {
-    //       httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
-    //     } else {
-    //       archive.isUrlInList(req.url, (err, exists) => {
-    //         if (exists) {
-    //           httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
-    //           worker.work([req.url]);
-    //           httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
-    //         } else {
-    //           archive.addUrlToList(req.url, (err, data) => {
-    //             worker.work([req.url]);
-    //             httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
-    //           });
-    //         }
-    //       });
-    //     }
-    //   });     
-    // }
     if (req.url === '/') {
       httpHelpers.serveAssets(archive.paths.siteAssets, res, '/index.html');
     } else {
@@ -39,7 +17,6 @@ exports.handleRequest = function (req, res) {
         if (exists) {
           httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
         } else {
-          console.log(res.location);
           httpHelpers.serve404(res);
         }
       });
@@ -61,16 +38,17 @@ exports.handleRequest = function (req, res) {
             if (exists) {
               httpHelpers.serveAssetsPosts(archive.paths.archivedSites, res, '/' + url);
             } else {
-              httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
-              worker.work([url]);
-              httpHelpers.serveAssets(archive.paths.archivedSites, res, '/' + url);
+              httpHelpers.serveAssetsPosts(archive.paths.siteAssets, res, '/loading.html');
+              //worker.work([url]);
+              httpHelpers.serveAssetsPosts(archive.paths.archivedSites, res, '/' + url);
             }
           });
         } else {
+          console.log('bl kvksl vls');
           archive.addUrlToList(url, (err, data) => {
-            console.log(data);
-            httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
-            worker.work([url]);
+            console.log('------------>data', url);
+            httpHelpers.serveAssetsPosts(archive.paths.siteAssets, res, '/loading.html');
+            //worker.work([url]);
             httpHelpers.serveAssetsPosts(archive.paths.archivedSites, res, '/' + url);
           });
         }
