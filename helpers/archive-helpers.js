@@ -49,7 +49,7 @@ exports.isUrlInList = function(url, callback) {
 };
 
 exports.addUrlToList = function(url, callback) {
-  fs.appendFile(exports.paths.list, '\n' + url, function(err, data) {
+  fs.appendFile(exports.paths.list, url + '\n', function(err, data) {
     if (err) {
       callback(err, null);   
     } else {
@@ -68,18 +68,17 @@ exports.isUrlArchived = function(url, callback) {
 };
 
 exports.downloadUrls = function(urls) {
-  var storage = [];
-  for (var i = 0; i < urls.length; i++) {
-    var file = fs.createWriteStream(urls[i]);
-    console.log('hello!', urls[i]);
-    var options = {
-      host: urls[i],
-      port: 80,
-      path: '/'
-    };
-    http.get(options, function(response) {
-      response.pipe(file);
+  urls.forEach(url => {
+    var urlData;
+    http.get(`http://${url}`, function(res) {
+      res.setEncoding('utf8');
+      res.on('data', function(chunk) {
+        urlData = chunk;
+      });
+      res.on('end', function() {
+        fs.writeFile(`${exports.paths.archivedSites}/${url}`, urlData);
+      });
     });
-  }
+  });
   
 };

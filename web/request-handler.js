@@ -2,26 +2,82 @@ var path = require('path');
 var archive = require('../helpers/archive-helpers');
 var fs = require('fs');
 var httpHelpers = require('./http-helpers');
+var worker = require('../workers/htmlfetcher');
 // require more modules/folders here!
 
 exports.handleRequest = function (req, res) {
-  req.method = 'GET';
-  // var url = 'http://127.0.0.1:8080/';
-  // https.get(url, res => {
-  //   res.setEncoding('utf8');
-  //   let body = "";
-  //   res.on("data", data => {
-  //     body += data;
 
-  //   });
-  fs.readFile('./web/public/index.html', function(err, html) {
-    if (err) {
-      throw err;
+
+  if (req.method === 'GET') {
+  
+    // if (req.url === '/') {
+    //   httpHelpers.serveAssets(archive.paths.siteAssets, res, '/index.html');
+    // } else {
+    //   archive.isUrlArchived(req.url, (err, exists) => {
+    //     if (exists) {
+    //       httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
+    //     } else {
+    //       archive.isUrlInList(req.url, (err, exists) => {
+    //         if (exists) {
+    //           httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
+    //           worker.work([req.url]);
+    //           httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
+    //         } else {
+    //           archive.addUrlToList(req.url, (err, data) => {
+    //             worker.work([req.url]);
+    //             httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
+    //           });
+    //         }
+    //       });
+    //     }
+    //   });     
+    // }
+    if (req.url === '/') {
+      httpHelpers.serveAssets(archive.paths.siteAssets, res, '/index.html');
+    } else {
+      archive.isUrlArchived(req.url, (err, exists) => {
+        if (exists) {
+          httpHelpers.serveAssets(archive.paths.archivedSites, res, req.url);
+        } else {
+          console.log(res.location);
+          httpHelpers.serve404(res);
+        }
+      });
     }
-    res.writeHead(200, {'Content-Type': 'text/html', Location: './index.html'});
-    //res.write(html);
-    res.end(html);
-  //   });
-  });
+    
   //res.end(archive.paths.list);
+  }
+  
+  if (req.method === 'POST') {
+    var urldata = '';
+    var url = '';
+    req.on('data', (chunk) => {
+      urldata += chunk;
+      var url = urldata.split('=')[1].replace('http://', '');
+      
+      archive.isUrlInList(url, (err, exists) => {
+        if (exists) {
+          archive.isUrlArchived(url, (err, exists) => {
+            if (exists) {
+              httpHelpers.serveAssetsPosts(archive.paths.archivedSites, res, '/' + url);
+            } else {
+              httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
+              worker.work([url]);
+              httpHelpers.serveAssets(archive.paths.archivedSites, res, '/' + url);
+            }
+          });
+        } else {
+          archive.addUrlToList(url, (err, data) => {
+            console.log(data);
+            httpHelpers.serveAssets(archive.paths.siteAssets, res, '/loading.html');
+            worker.work([url]);
+            httpHelpers.serveAssetsPosts(archive.paths.archivedSites, res, '/' + url);
+          });
+        }
+      });
+    });
+    req.on('end', function () {
+      console.log('help');
+    });
+  }
 };
